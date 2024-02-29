@@ -1,22 +1,17 @@
 import java.util.Random;
 import java.util.Scanner;
-
-/**
- * Despejar todas las casillas que no oculten una mina.
- * Algunas casillas tienen un número, el cuál indica la cantidad de minas que hay en las casillas circundantes.
- * - Si en una casilla aparece el número 2, significa que en las 8 casillas de alrededor hay 3 minas y 5 sin minas. 
- * - Si se descubre una casilla sin número indica que ninguna de las casillas vecinas tiene mina y estás se descubren automáticamente.
- * - Si se toca una mina se acaba el juego.
- * - Se pueden marcar casillas donde crees que hay una mina.
+/*
+ * Casillas vacías: #
+ * Casillas con bombas: ^
+ * Casillas sin descubrir: *
  */
-
 /**
  * @author Daniel Brito Negrín
  * @version 1.0
  */
 
 public class Buscaminas {
-    private final int MINAS = 30;
+    private int MINAS = 20;
     private char[][] TABLERO = {{'*', '*', '*', '*', '*', '*', '*', '*', '*', '*', '*', '*', '*', '*', '*', '*', '*', '*', '*', '*'},
                                 {'*', '*', '*', '*', '*', '*', '*', '*', '*', '*', '*', '*', '*', '*', '*', '*', '*', '*', '*', '*'},
                                 {'*', '*', '*', '*', '*', '*', '*', '*', '*', '*', '*', '*', '*', '*', '*', '*', '*', '*', '*', '*'},
@@ -38,12 +33,14 @@ public class Buscaminas {
                                 {'*', '*', '*', '*', '*', '*', '*', '*', '*', '*', '*', '*', '*', '*', '*', '*', '*', '*', '*', '*'},
                                 {'*', '*', '*', '*', '*', '*', '*', '*', '*', '*', '*', '*', '*', '*', '*', '*', '*', '*', '*', '*'},
                             };
+    private final int filas = TABLERO.length;
+    private final int columnas = TABLERO[0].length;
 
     /**
      * Método constructor por defecto.
      */
     public Buscaminas() {
-
+        
     }
 
     /**
@@ -59,7 +56,7 @@ public class Buscaminas {
      * Método para obtener el número de minas;
      * @return Devuelve el número de minas.
      */
-    public int getMINAS() {
+    private int getMINAS() {
         return this.MINAS;
     }
 
@@ -67,17 +64,21 @@ public class Buscaminas {
      * Método para obtener el tablero.
      * @return Devuelve el tablero del juego.
      */
-    public char[][] getTABLERO() {
+    private char[][] getTABLERO() {
         return this.TABLERO;
     }
 
+    private int getFilas() {
+        return this.filas;
+    }
+
+    private int getColumnas() {
+        return this.columnas;
+    }
+
     // Setters
-    /**
-     * Método para modificar el tablero.
-     * @param tablero Nuevo tablero del juego.
-     */
-    public void setTABLERO(char[][] tablero) {
-        this.TABLERO = tablero;
+    private void setMINAS(int minas) {
+        this.MINAS = minas;
     }
 
     // Métodos
@@ -85,36 +86,61 @@ public class Buscaminas {
      * Método que genera un nuevo tablero con las minas.
      * @return Devuelve el tablero con las minas ya generadas.
      */
-    public char[][] generarTableroMinas() {
-        char[][] tablero = new char[20][20];
-        for (int i = 0; i < 20; i++) {
-            for (int j = 0; j < 20; j++) {
-                tablero[i][j] = '*';
+    private char[][] generarTableroMinas() {
+        // Crear un nuevo tablero de minas
+        char[][] tableroMinas = new char[getFilas()][getColumnas()];
+
+        // Inicializar todas las casillas como vacías
+        for (int i = 0; i < getFilas(); i++) {
+            for (int j = 0; j < getColumnas(); j++) {
+                tableroMinas[i][j] = '0';
             }
         }
+
+        // Colocar minas aleatoriamente
+        colocarMinasAleatoriamente(tableroMinas);
+
+        // Calcular y colocar los números de minas cercanas
+        calcularNumerosMinasCercanas(tableroMinas);
+
+        return tableroMinas;
+    }
+
+    private void colocarMinasAleatoriamente(char[][] tableroMinas) {
         Random random = new Random();
-        int aleatorioI;
-        int aleatorioJ;
-        for (int i = 0; i < this.MINAS; i++) {
-            aleatorioI = random.nextInt(20);
-            aleatorioJ = random.nextInt(20);
-            if (tablero[aleatorioI][aleatorioJ] == '*') {
-                tablero[aleatorioI][aleatorioJ] = '^';
-            } else {
-                while (tablero[aleatorioI][aleatorioJ] != '*') {
-                    aleatorioI = random.nextInt(20);
-                    aleatorioJ = random.nextInt(20);
+        
+
+        for (int i = 0; i < getMINAS(); i++) {
+            int x = random.nextInt(getFilas());
+            int y = random.nextInt(getColumnas());
+
+            // Asegurarse de no colocar dos minas en la misma posición
+            while (tableroMinas[x][y] == '^') {
+                x = random.nextInt(getFilas());
+                y = random.nextInt(getColumnas());
+            }
+
+            tableroMinas[x][y] = '^';
+        }
+    }
+
+    private void calcularNumerosMinasCercanas(char[][] tableroMinas) {
+        for (int i = 0; i < getFilas(); i++) {
+            for (int j = 0; j < getColumnas(); j++) {
+                if (tableroMinas[i][j] != '^') {
+                    int contadorMinas = contarMinas(tableroMinas, i, j);
+                    if (contadorMinas > 0) {
+                        tableroMinas[i][j] = (char) (contadorMinas + '0');
+                    }
                 }
             }
         }
-        return tablero;
     }
-
     /**
      * Método para imprimir el tablero de juego.
      * @param tablero Tablero que se imprime.
      */
-    public void imprimirTablero(char[][] tablero) {
+    private void imprimirTablero(char[][] tablero) {
         for(int i = 0; i < 20; i++) {
             for(int j = 0; j < 20; j++) {
                 System.out.print(tablero[i][j] + "  ");
@@ -127,7 +153,7 @@ public class Buscaminas {
      * Método que pide una coordenada (X), comprobando que esté en el rango [1,20].
      * @return Devuelve la coordenada (X).
      */
-    public int pedirCoordenadaX() {
+    private int pedirCoordenadaX() {
         Scanner in = new Scanner(System.in);
         System.out.print("Introduce coordenada X [1-20]: ");
         int coordenadaX = in.nextInt() - 1;
@@ -142,7 +168,7 @@ public class Buscaminas {
      * Método que pide una coordenada (Y), comprobando que esté en el rango [1,20].
      * @return Devuelve la coordenada (Y).
      */
-    public int pedirCoordenadaY() {
+    private int pedirCoordenadaY() {
         Scanner in = new Scanner(System.in);
         System.out.print("Introduce coordenada Y [1-20]: ");
         int coordenadaY = in.nextInt() - 1;
@@ -154,25 +180,10 @@ public class Buscaminas {
     }
 
     /**
-     * Método que comprueba si el punto introducido por el usuario es una mina o no.
-     * @param coordenadaX Coordenada X introducida por el usuario.
-     * @param coordenadaY Coordenada Y introducida por el usuario.
-     * @param tableroMinas Tablero donde están las minas.
-     * @return Indica si es una mina o no.
-     */
-    public boolean comprobarMinas(int coordenadaX, int coordenadaY, char[][] tableroMinas) {
-        if (tableroMinas[coordenadaX][coordenadaY] == '^') {
-            return true;
-        } else {
-            return false;
-        }
-    }
-
-    /**
      * Método que pide una cadena de texto.
      * @return Palabra introducida.
      */
-    public String pedirString() {
+    private String pedirString() {
         Scanner in = new Scanner(System.in);
         String palabra = in.nextLine();
         return palabra;
@@ -182,107 +193,74 @@ public class Buscaminas {
      * Método que comprueba el tipo de movimiento por cada turno.
      * @return Indica que movimiento se realiza. 
      */
-    public boolean tipoMovimiento() {
-        System.out.print("Eligue el movimiento que quieras jugar: ");
+    private boolean tipoMovimiento() {
+        System.out.print("Elige el movimiento que quieras jugar: ");
         String opcion = pedirString();
-        if (opcion.toLowerCase().equals("desactivar")) {
+        if (opcion.toLowerCase().equals("marcar")) {
+            return true;
+        } else if (opcion.toLowerCase().equals("desactivar")) {
             return true;
         } else {
             return false;
         }
     }
-    /**
-     *  *  *  * || x-1,y+1    x,y+1   x+1,y+1  || (x,y) x,y+1   ||  x-1,y x-1, y+1 || x,y-1 (x,y)    || x-1,y-1 x-1,y  || x,y-1 (x,y) x,y+1     || x-1,y x-1,y+1
-     *  * (*) * || x-1,y      (x,y)     x+1,y  || x+1,y x+1,y-1 || (x,y)  x,y+1   || x+1,y-1 x+1,y  || x,y-1   (x,y)   || x+1,y-1 x+1,y x+1,y+1 || (x,y) x,y+1
-     *  *  *  * || x-1,y-1    x,y-1   x+1, y-1 ||               ||                ||                ||                 ||                       || x+1,y x+1,y+1
-     */
-    /**
-     * Método que comprueba las casillas de los alrededores de la escogida por el usuario, contando así la cantidad de minas adyacentes a cada casilla.
-     * @param tableroMinas Tablero donde estén las minas.
-     * @param coordenadaX Coordenada X introducida por el usuario.
-     * @param coordenadaY Coordenada Y introducida por el usuario.
-     */
-    public void comprobarMinasAdyacentes(char[][] tableroMinas, int coordenadaX, int coordenadaY) {
-        if (tableroMinas[coordenadaX][coordenadaY] == '*') {
-            int contadorMinas = 0;
-            if (coordenadaX == 0 && coordenadaY == 0) {
-                if (tableroMinas[coordenadaX + 1][coordenadaY] == '^') {
-                    contadorMinas++;
-                } else if (tableroMinas[coordenadaX][coordenadaY + 1] == '^') {
-                    contadorMinas++;
-                } else if (tableroMinas[coordenadaX + 1][coordenadaY - 1] == '^') {
-                    contadorMinas++;
-                }
-            } else if (coordenadaX == 0 && coordenadaY == 20) {
-                if (tableroMinas[coordenadaX][coordenadaY - 1] == '^') {
-                    contadorMinas++;
-                } else if (tableroMinas[coordenadaX - 1][coordenadaY + 1] == '^') {
-                    contadorMinas++;
-                } else if (tableroMinas[coordenadaX ][coordenadaY + 1] == '^') {
-                    contadorMinas++;
-                }
-            } else if (coordenadaX == 20 && coordenadaY == 0) {
-                if (tableroMinas[coordenadaX - 1][coordenadaY] == '^') {
-                    contadorMinas++;
-                } else if (tableroMinas[coordenadaX - 1][coordenadaY + 1] == '^') {
-                    contadorMinas++;
-                } else if (tableroMinas[coordenadaX][coordenadaY + 1] == '^') {
-                    contadorMinas++;
-                }
-            } else if (coordenadaX == 20 && coordenadaY == 20) {
-                if (tableroMinas[coordenadaX - 1][coordenadaY - 1] == '^') {
-                    contadorMinas++;
-                } else if (tableroMinas[coordenadaX - 1][coordenadaY] == '^') {
-                    contadorMinas++;
-                } else if (tableroMinas[coordenadaX][coordenadaY - 1] == '^') {
-                    contadorMinas++;
-                }
-            } else if (coordenadaX == 0 && coordenadaY != 0) {
-                if (tableroMinas[coordenadaX + 1][coordenadaY - 1] == '^') {
-                    contadorMinas++;
-                } else if (tableroMinas[coordenadaX + 1][coordenadaY] == '^') {
-                    contadorMinas++;
-                } else if (tableroMinas[coordenadaX + 1][coordenadaY + 1] == '^') {
-                    contadorMinas++;
-                } else if (tableroMinas[coordenadaX][coordenadaY + 1] == '^') {
-                    contadorMinas++;
-                } else if (tableroMinas[coordenadaX][coordenadaY - 1] == '^') {
-                    contadorMinas++;
-                }
-            } else if (coordenadaX != 0 && coordenadaY == 0) {
-                if (tableroMinas[coordenadaX + 1][coordenadaY] == '^') {
-                    contadorMinas++;
-                } else if (tableroMinas[coordenadaX - 1][coordenadaY] == '^') {
-                    contadorMinas++;
-                } else if (tableroMinas[coordenadaX + 1][coordenadaY + 1] == '^') {
-                    contadorMinas++;
-                } else if (tableroMinas[coordenadaX - 1][coordenadaY + 1] == '^') {
-                    contadorMinas++;
-                } else if (tableroMinas[coordenadaX + 1][coordenadaY] == '^') {
-                    contadorMinas++;
-                }
-            } else {
-                if (tableroMinas[coordenadaX - 1][coordenadaY - 1] == '^') {
-                    contadorMinas++;
-                } else if (tableroMinas[coordenadaX - 1][coordenadaY] == '^') {
-                    contadorMinas++;
-                } else if (tableroMinas[coordenadaX - 1][coordenadaY + 1] == '^') {
-                    contadorMinas++;
-                } else if (tableroMinas[coordenadaX][coordenadaY + 1] == '^') {
-                    contadorMinas++;
-                } else if (tableroMinas[coordenadaX][coordenadaY - 1] == '^') {
-                    contadorMinas++;
-                } else if (tableroMinas[coordenadaX + 1][coordenadaY + 1] == '^') {
-                    contadorMinas++;
-                } else if (tableroMinas[coordenadaX + 1][coordenadaY] == '^') {
-                    contadorMinas++;
-                } else if (tableroMinas[coordenadaX + 1][coordenadaY - 1] == '^') {
+
+    private int contarMinas(char[][] tableroMinas, int coordenadaX, int coordenadaY) {
+        int contadorMinas = 0;
+        for (int i = -1; i <= 1; i++) {
+            for (int j = -1; j <= 1; j++) {
+                int nuevaX = coordenadaX + i;
+                int nuevaY = coordenadaY + j;
+
+                if (nuevaX >= 0 && nuevaX < getFilas() && nuevaY >= 0 && nuevaY < getColumnas() && tableroMinas[nuevaX][nuevaY] == '^') {
                     contadorMinas++;
                 }
             }
-            char letra = (char) contadorMinas;
-            this.TABLERO[coordenadaX][coordenadaY] = letra;
-            imprimirTablero(getTABLERO());
+        }
+        return contadorMinas;
+    }
+
+    private void modificarTablero(char[][] tableroMinas, int coordenadaX, int coordenadaY) {
+        if (tableroMinas[coordenadaX][coordenadaY] !=  '0' && tableroMinas[coordenadaX][coordenadaY] != '^') {
+            this.TABLERO[coordenadaX][coordenadaY] = (char) (contarMinas(tableroMinas, coordenadaX, coordenadaY) + '0');
+            desvelarCasillasVacias(tableroMinas, coordenadaX, coordenadaY);
+        } else {
+            for (int i = 0; i < getFilas(); i++) {
+                for (int j = 0; j < getColumnas(); j++) {
+                    if (tableroMinas[i][j] == '0') {
+                        this.TABLERO[i][j]  = '0';
+                    }
+                }
+            }
+        }
+    }
+    
+
+    private void desvelarCasillasVacias(char[][] tableroMinas, int coordenadaX, int coordenadaY) {
+        for (int i = -1; i <= 1; i++) {
+            for (int j = -1; j <= 1; j++) {
+                int nuevaX = coordenadaX + i;
+                int nuevaY = coordenadaY + j;
+    
+                if (nuevaX >= 0 && nuevaX < getFilas() && nuevaY >= 0 && nuevaY < getColumnas() && this.TABLERO[nuevaX][nuevaY] == '*' && tableroMinas[nuevaX][nuevaY] != 'B') {
+                    this.TABLERO[nuevaX][nuevaY] = (char) (contarMinas(tableroMinas, coordenadaX, coordenadaY) + '0');
+                }
+            }
+        }
+    }
+
+    private void marcarCasilla(char[][] tableroMinas, int coordenadaX, int coordenadaY) {
+        if (tableroMinas[coordenadaX][coordenadaY] == '^') {
+            this.TABLERO[coordenadaX][coordenadaY] = 'B';
+            desvelarCasillasVacias(tableroMinas, coordenadaX, coordenadaY);
+            setMINAS(getMINAS() - 1);
+            System.out.println("Has desactivado una mina. Le quedan " + getMINAS() + " minas.");
+        } else {
+            if (this.TABLERO[coordenadaX][coordenadaY] == '*') {
+                this.TABLERO[coordenadaX][coordenadaY] = 'M';
+            } else if (this.TABLERO[coordenadaX][coordenadaY] == 'M') {
+                this.TABLERO[coordenadaX][coordenadaY] = '*';
+            }
         }
     }
 
@@ -290,33 +268,57 @@ public class Buscaminas {
      * Método para iniciar el juego.
      */
     public void jugar() {
-        boolean desactivar;
         boolean jugar = true;
         char[][] tableroMinas = generarTableroMinas();
+        System.out.println("===========================================================");
+        imprimirTablero(getTABLERO());
+        System.out.println("===========================================================");
         do {
-            imprimirTablero(getTABLERO());
-            System.out.println("==================================================");
-            imprimirTablero(tableroMinas);
-            System.out.println("==================================================");
-            desactivar = tipoMovimiento();
-            if (desactivar) {
-                System.out.println("Has elegido 'Desactivar'."); 
-                int coordenadaX = pedirCoordenadaX();
-                int coordenadaY = pedirCoordenadaY();
-            } else {
-                System.out.println("Has elegido 'Descubrir'.");
-                int coordenadaX = pedirCoordenadaX();
-                int coordenadaY = pedirCoordenadaY();
-                if (comprobarMinas(coordenadaX, coordenadaY, tableroMinas)) {
-                    System.out.println("Has explotado una mina. Perdiste!");
-                    jugar = false;
-                    break;
+            boolean marcar = tipoMovimiento();
+                if (marcar) {
+                    System.out.println("Has elegido 'Marcar'.");
+                    int coordenadaX = pedirCoordenadaX();
+                    int coordenadaY = pedirCoordenadaY();
+                    marcarCasilla(tableroMinas, coordenadaX, coordenadaY);
+                    if (getMINAS() != 0) {
+                        System.out.println("===========================================================");
+                        imprimirTablero(getTABLERO());
+                        System.out.println("===========================================================");
+                    } else {
+                        System.out.println("Ha ganado!");
+                        jugar = verificarFinJuego();
+                    }
                 } else {
-                    comprobarMinasAdyacentes(tableroMinas, coordenadaX, coordenadaY);
-                    imprimirTablero(getTABLERO());
+                    System.out.println("Has elegido 'Descubrir'.");
+                    int coordenadaX = pedirCoordenadaX();
+                    int coordenadaY = pedirCoordenadaY();
+                    if (tableroMinas[coordenadaX][coordenadaY] == '^') {
+                        System.out.println("Ha explotado una mina. Ha perdido!");
+                        jugar = verificarFinJuego(tableroMinas, coordenadaX, coordenadaY);
+                    } else {
+                        modificarTablero(tableroMinas, coordenadaX, coordenadaY);
+                        System.out.println("===========================================================");
+                        imprimirTablero(getTABLERO());
+                        System.out.println("===========================================================");
+                    }
                 }
-            }
-        } while (!jugar);
+        } while (jugar);
+    }
+
+    private boolean verificarFinJuego() {
+        if (getMINAS() == 0) {
+            return false;
+        } else {
+            return true;
+        }
+    }
+
+    private boolean verificarFinJuego(char[][] tableroMinas, int coordenadaX, int coordenadaY) {
+        if (tableroMinas[coordenadaX][coordenadaY] == '^') {
+            return false;
+        } else {
+            return true;
+        }
     }
 
 }
